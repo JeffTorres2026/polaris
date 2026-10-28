@@ -444,6 +444,12 @@
   .compare-vertical-legend { display:flex; gap:12px; font-size:11px; color:var(--ink-soft); margin:8px 0 0; }
   .compare-vertical-legend strong:first-child { color:var(--teal-600); }
   .compare-vertical-legend strong:last-child { color:#d6741e; }
+
+  /* ===== Mapa de calor: hoje, hora em andamento e células projetadas ===== */
+  .heatmap-grid .heatmap-cell.heatmap-today { box-shadow: inset 0 0 0 1.5px rgba(11,116,136,.55); }
+  .heatmap-grid .heatmap-cell.heatmap-projected { opacity: .62; font-style: italic; outline: 1px dashed rgba(11,116,136,.38); outline-offset: -2px; }
+  .heatmap-grid .heatmap-cell.heatmap-inprogress { box-shadow: inset 0 0 0 2.5px #e08a1e; border: 0; font-weight: 800; opacity: 1; }
+  .heatmap-grid .heatmap-cell small { font-size: 9px; opacity: .8; font-weight: 600; margin-left: 1px; }
 </style>
 <style>
 .polaris-auth-gate{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:radial-gradient(circle at 20% 20%,#153a45,#07151b 55%,#040a0d);padding:24px}.polaris-auth-card,.polaris-admin-card{width:min(460px,100%);background:#f8fbfc;border:1px solid rgba(255,255,255,.25);border-radius:22px;box-shadow:0 24px 80px #0008;padding:34px;color:#102229}.polaris-auth-mark{width:72px;height:72px;border-radius:18px;display:grid;place-items:center;background:#0b7488;color:#fff;font-weight:800;font-size:25px;overflow:hidden}.polaris-auth-mark img{width:100%;height:100%;object-fit:cover}.polaris-auth-kicker{font-size:11px;letter-spacing:.16em;font-weight:800;color:#0b7488;margin:22px 0 8px}.polaris-auth-card h1,.polaris-admin-card h2{margin:0 0 10px}.polaris-auth-copy{color:#5a6b70;line-height:1.55}.polaris-auth-form,.polaris-admin-form{display:grid;gap:12px;margin-top:22px}.polaris-auth-form label{display:grid;gap:6px;font-size:13px;font-weight:700}.polaris-auth-form input,.polaris-admin-form input,.polaris-admin-form select{border:1px solid #cbd8dc;border-radius:10px;padding:12px;background:#fff;font:inherit}.polaris-auth-submit,.polaris-auth-secondary{border:0;border-radius:10px;padding:12px;font-weight:800;cursor:pointer}.polaris-auth-submit{background:#0b7488;color:#fff}.polaris-auth-secondary{background:#e6f1f3;color:#0b5a69}.polaris-auth-link{border:0;background:none;color:#0b7488;cursor:pointer;text-decoration:underline}.polaris-auth-message{min-height:20px;font-size:13px;color:#a3342a}.polaris-auth-form[hidden]{display:none!important}.tv-mode-btn svg{width:19px;height:19px}.tv-settings-card{border:1px solid rgba(11,116,136,.18)}body.tv-mode .header__right,body.tv-mode #reportsToggleBtn,body.tv-mode #monitorToggleBtn,body.tv-mode #panelToggleBtn,body.tv-mode #polaris-admin-open{display:none!important}body.tv-mode .header{justify-content:space-between}body.tv-mode .header__brand{display:flex!important;align-items:center}body.tv-mode #panel-config,body.tv-mode #panel-reports,body.tv-mode #panel-monitor{display:none!important}body.tv-mode #panel-painel{display:flex!important;flex:1 1 auto;width:100%;max-width:none;min-width:0;margin:0;overflow:hidden}body.tv-mode .app{padding:0}
@@ -908,7 +914,7 @@ body.tv-mode #panel-painel .topic-pill__count { font-size: clamp(22px, 2.4vw, 42
       <div id="heatmapWrap" class="heatmap-wrap">
         <p class="reports-loading">Carregando…</p>
       </div>
-      <p class="reports-footnote">Cor mais forte = mais atendimentos, na média histórica daquele horário/dia da semana.</p>
+      <p class="reports-footnote">Números sólidos = volume real desta semana. Células mais claras, em itálico e tracejadas = média histórica daquele dia/horário (ainda não aconteceu nesta semana) — servem de base para comparar os dias. Contorno verde-azulado = hoje · contorno laranja = hora em andamento (parcial/média esperada). Passe o mouse para ver os detalhes.</p>
     </div>
 
     <div class="card">
@@ -1014,7 +1020,7 @@ body.tv-mode #panel-painel .topic-pill__count { font-size: clamp(22px, 2.4vw, 42
 
       <div id="compareResults" style="display:none; margin-top:16px;">
         <div id="compareSummaryGrid" class="comparisons-grid"></div><div id="compareBarsWrap" class="compare-bars-wrap" style="margin-top:16px;"></div>
-        <p class="reports-hint" style="margin-top:16px;">Variação por dia da semana e horário (Período B em relação ao Período A). Células sem dado em algum dos dois períodos ficam em branco.</p>
+        <p class="reports-hint" style="margin-top:16px;">Variação por dia da semana e horário, de A para B (volume: verde = diminuiu, melhorou · vermelho = aumentou, piorou). Células sem dado em algum dos dois períodos ficam em branco.</p>
         <div id="compareHeatmapWrap" class="heatmap-wrap" style="margin-top:8px;"></div>
         <div class="actions" style="margin-top:14px;">
           <button type="button" id="compareExportXlsxBtn" class="btn btn--primary">Exportar comparação (XLSX)</button>
@@ -1793,8 +1799,42 @@ function countWordOverlap(kwWords, textWordsArr) {
   return kwWords.filter((kw) => textWordsArr.some((tw) => wordsMatch(kw, tw))).length;
 }
 
+// ---------------------------------------------------------------------
+// Regras aprendidas (aprovadas no painel Admin) — correspondência ESTRITA.
+// Antes, TODAS as palavras do assunto de exemplo viravam palavras-chave e a
+// regra rodava por "trecho" antes das categorias nativas: bastava um assunto
+// ter uma palavra comum ("problema", "sistema"...) para cair na categoria
+// aprovada. Agora uma regra aprendida só vale em 3 casos, sempre por
+// PALAVRA INTEIRA: (a) a frase aprovada completa; (b) as palavras da própria
+// etiqueta da categoria (ex.: "Balança" -> só quando escrever "balança");
+// (c) palavras-chave curadas, gravadas com o prefixo "=". Palavras-chave
+// antigas (sem "=") são ignoradas — por isso regras já cadastradas deixam de
+// interferir nas categorias nativas.
+// ---------------------------------------------------------------------
+const RULE_GENERIC_WORDS = new Set(["sistema", "problema", "erro", "outros", "outro", "geral", "cliente", "assunto", "categoria", "ajuda"]);
 let learnedSubjectRules = [];
 let learnedRulesLoaded = false;
+
+function termInText(paddedNorm, term) {
+  if (!term) return false;
+  return paddedNorm.includes(` ${term} `) || paddedNorm.includes(` ${term}s `) || paddedNorm.includes(` ${term}es `);
+}
+function ruleLabelAnchors(label) {
+  return significantWords(normalizeSubjectText(label || "")).filter((w) => w.length >= 4 && !RULE_GENERIC_WORDS.has(w));
+}
+function compileLearnedRule(rule) {
+  const curated = (rule.keywords || [])
+    .filter((k) => typeof k === "string" && k.startsWith("="))
+    .map((k) => normalizeSubjectText(k.slice(1)))
+    .filter((k) => k.length >= 3);
+  const phrases = (rule.phrases || []).map(normalizeSubjectText).filter((ph) => ph.length >= 6);
+  return { terms: [...new Set([...ruleLabelAnchors(rule.category_label), ...curated])], phrases };
+}
+function learnedRuleMatches(rule, paddedNorm) {
+  const c = rule._compiled || (rule._compiled = compileLearnedRule(rule));
+  return c.phrases.some((ph) => paddedNorm.includes(` ${ph} `)) || c.terms.some((t) => termInText(paddedNorm, t));
+}
+
 async function loadLearnedSubjectRules() {
   if (learnedRulesLoaded || !window.sb) return;
   learnedRulesLoaded = true;
@@ -1804,12 +1844,13 @@ async function loadLearnedSubjectRules() {
     learnedSubjectRules.forEach((r) => { SUBJECT_CATEGORY_LABEL[r.category_key] = r.category_label; });
   } catch (error) { console.warn("[Polaris] Regras aprendidas indisponíveis:", error); }
 }
+
 function categorizeSubject(text) {
   const norm = normalizeSubjectText(text);
   if (!norm) return null;
+  const padded = ` ${norm} `;
   for (const rule of learnedSubjectRules) {
-    const terms = [...(rule.keywords || []), ...(rule.phrases || [])].map(normalizeSubjectText).filter(Boolean);
-    if (terms.some((term) => norm.includes(term))) return rule.category_key;
+    if (learnedRuleMatches(rule, padded)) return rule.category_key;
   }
 
   // 1) Substring direto — cobre a maioria dos casos reais
@@ -2349,77 +2390,99 @@ function renderHeatmap(all) {
   const today = todayLocalISODate();
   const todayWeekday = new Date().getDay() || 7;
   const currentHour = new Date().getHours();
-  const mondayISO = mondayOfWeekISO(today);
-  const weekDates = Array.from({ length: 7 }, (_, i) => addDaysISO(mondayISO, i)); // índice 0 = segunda desta semana
+  const mondayThisWeek = isoMondayOf(today);
+  const sundayThisWeek = addDaysISO(mondayThisWeek, 6);
 
-  // O que aparece ESCRITO em cada quadradinho é o valor REAL desta semana
-  // (data específica de segunda a domingo da semana corrente) — não uma
-  // média. Só ao passar o mouse é que mostramos a média histórica (todas as
-  // outras semanas/dias já coletados para aquele mesmo dia da semana + hora).
-  const rowsByDateHour = {};
-  all.forEach((r) => { rowsByDateHour[`${r.metric_date}-${r.hour}`] = r; });
+  // Separa: (1) valor REAL desta semana (horas já fechadas), (2) valor parcial da
+  // hora em andamento, (3) média histórica por (dia da semana, hora) — usada para
+  // preencher o que ainda não aconteceu e como referência no tooltip.
+  const realThisWeek = {};
+  let liveNow = null;
+  let anyData = false;
+  const priorBuckets = {}; // só semanas anteriores
+  const anyBuckets = {};   // qualquer hora já fechada (fallback)
+  const addTo = (map, key, v) => { (map[key] = map[key] || { sum: 0, count: 0 }); map[key].sum += v; map[key].count += 1; };
 
-  // Pool histórico (todas as horas já fechadas, de qualquer data) — usado só
-  // pro tooltip, nunca pro número visível do quadradinho.
-  const historical = all.filter((r) => {
-    if (r.ended_count_hour == null) return false;
-    if (r.metric_date === today) return r.hour < currentHour;
-    return true;
+  (all || []).forEach((r) => {
+    if (r.ended_count_hour == null) return;
+    anyData = true;
+    const key = `${r.weekday}-${r.hour}`;
+    if (r.metric_date === today && r.hour >= currentHour) {
+      if (r.hour === currentHour) liveNow = r.ended_count_hour; // hora em andamento: nunca entra na média
+      return;
+    }
+    if (r.metric_date >= mondayThisWeek && r.metric_date <= sundayThisWeek) realThisWeek[key] = r.ended_count_hour;
+    addTo(anyBuckets, key, r.ended_count_hour);
+    if (r.metric_date < mondayThisWeek) addTo(priorBuckets, key, r.ended_count_hour);
   });
 
-  if (historical.length === 0 && weekDates.every((d) => !all.some((r) => r.metric_date === d))) {
+  if (!anyData) {
     wrap.innerHTML = '<p class="reports-empty">Ainda não há dados suficientes pra montar o mapa de calor — volte em algumas horas.</p>';
     return;
   }
 
-  const buckets = {}; // "weekday-hour" -> {sum, count}
-  historical.forEach((r) => {
-    const key = `${r.weekday}-${r.hour}`;
-    if (!buckets[key]) buckets[key] = { sum: 0, count: 0 };
-    buckets[key].sum += r.ended_count_hour;
-    buckets[key].count += 1;
-  });
-
-  let maxAvg = 0;
-  const historicalAvgFor = (weekday, hour) => {
-    const b = buckets[`${weekday}-${hour}`];
-    if (!b) return null;
-    const avg = b.sum / b.count;
-    if (avg > maxAvg) maxAvg = avg;
-    return avg;
+  const histFor = (wd, hour) => {
+    const key = `${wd}-${hour}`;
+    const b = priorBuckets[key] || anyBuckets[key];
+    return b ? { avg: b.sum / b.count, n: b.count, prior: !!priorBuckets[key] } : null;
   };
-  // Precomputa (pra ter maxAvg fechado antes de desenhar as cores)
-  for (const hour of REPORT_HOURS) for (let wd = 1; wd <= 7; wd++) historicalAvgFor(wd, hour);
+  const histText = (h) => (h
+    ? `Média histórica: ${h.avg.toFixed(1)} (${h.n} ${h.n > 1 ? "ocorrências" : "ocorrência"}${h.prior ? " em semanas anteriores" : ""})`
+    : "Média histórica: sem dados ainda");
+
+  // Monta o modelo das células e a escala de cor (única para a grade inteira, para
+  // que dias/horários sejam comparáveis entre si).
+  const cells = [];
+  let maxVal = 0;
+  for (const hour of REPORT_HOURS) {
+    for (let wd = 1; wd <= 7; wd++) {
+      const key = `${wd}-${hour}`;
+      const isTodayCol = wd === todayWeekday;
+      const isNow = isTodayCol && hour === currentHour;
+      const isFuture = wd > todayWeekday || (isTodayCol && hour > currentHour);
+      const h = histFor(wd, hour);
+      let kind = "empty", scaleVal = null;
+      if (isNow) { kind = "now"; scaleVal = Math.max(liveNow || 0, h ? h.avg : 0); }
+      else if (!isFuture && realThisWeek[key] != null) { kind = "real"; scaleVal = realThisWeek[key]; }
+      else if (h) { kind = "projected"; scaleVal = h.avg; }
+      if (scaleVal != null && scaleVal > maxVal) maxVal = scaleVal;
+      cells.push({ wd, hour, key, isTodayCol, kind, scaleVal, h });
+    }
+  }
+
+  const textColor = (v) => (maxVal > 0 && v / maxVal > 0.55 ? "#fff" : "var(--ink)");
 
   let html = '<div class="heatmap-grid">';
   html += '<div class="heatmap-cell heatmap-head"></div>';
   for (let wd = 1; wd <= 7; wd++) {
     const todayCls = wd === todayWeekday ? "heatmap-today" : "";
-    html += `<div class="heatmap-cell heatmap-head ${todayCls}">${WEEKDAY_LABELS[wd]}</div>`;
+    html += `<div class="heatmap-cell heatmap-head ${todayCls}" title="${wd === todayWeekday ? "Hoje" : ""}">${WEEKDAY_LABELS[wd]}</div>`;
   }
 
-  for (const hour of REPORT_HOURS) {
-    html += `<div class="heatmap-cell heatmap-hour">${String(hour).padStart(2, "0")}h</div>`;
-    for (let wd = 1; wd <= 7; wd++) {
-      const cellDate = weekDates[wd - 1];
-      const isTodayCol = wd === todayWeekday ? "heatmap-today" : "";
-      const isFuture = cellDate > today || (cellDate === today && hour > currentHour);
-      const isInProgress = cellDate === today && hour === currentHour;
-      const row = rowsByDateHour[`${cellDate}-${hour}`];
-      const weekVal = row && row.ended_count_hour != null ? row.ended_count_hour : null;
-      const avg = historicalAvgFor(wd, hour);
-      const avgText = avg != null ? `média histórica: ${avg.toFixed(1)}` : "sem histórico suficiente ainda";
-
-      if (isInProgress) {
-        const label = weekVal != null ? Math.round(weekVal) : "…";
-        html += `<div class="heatmap-cell heatmap-inprogress" title="${WEEKDAY_LABELS[wd]} ${hour}h — em andamento (parcial) · ${avgText}">${label}</div>`;
-      } else if (isFuture || weekVal == null) {
-        html += `<div class="heatmap-cell heatmap-empty ${isTodayCol}" title="${WEEKDAY_LABELS[wd]} ${hour}h — ${isFuture ? "ainda não chegou" : "sem dado nesta semana"} · ${avgText}">–</div>`;
-      } else {
-        html += `<div class="heatmap-cell ${isTodayCol}" style="background:${colorForIntensity(weekVal, maxAvg)}" title="${WEEKDAY_LABELS[wd]} ${hour}h — nesta semana: ${Math.round(weekVal)} · ${avgText}">${Math.round(weekVal)}</div>`;
-      }
+  let lastHour = -1;
+  cells.forEach((c) => {
+    if (c.hour !== lastHour) {
+      html += `<div class="heatmap-cell heatmap-hour">${String(c.hour).padStart(2, "0")}h</div>`;
+      lastHour = c.hour;
     }
-  }
+    const day = WEEKDAY_LABELS[c.wd];
+    const todayCls = c.isTodayCol ? "heatmap-today" : "";
+    const bg = c.scaleVal != null ? `background:${colorForIntensity(c.scaleVal, maxVal)};color:${textColor(c.scaleVal)}` : "";
+    const hist = histText(c.h);
+
+    if (c.kind === "now") {
+      const live = liveNow != null ? liveNow : "–";
+      const expected = c.h ? `<small>/${Math.round(c.h.avg)}</small>` : "";
+      html += `<div class="heatmap-cell heatmap-inprogress ${todayCls}" style="${bg}" title="${day} ${c.hour}h — em andamento: ${liveNow != null ? liveNow + " até agora" : "sem leitura ainda"}. ${hist}. (atualiza a cada 5 min)">${live}${expected}</div>`;
+    } else if (c.kind === "real") {
+      html += `<div class="heatmap-cell ${todayCls}" style="${bg}" title="${day} ${c.hour}h — esta semana: ${realThisWeek[c.key]}. ${hist}">${Math.round(realThisWeek[c.key])}</div>`;
+    } else if (c.kind === "projected") {
+      const why = c.wd === todayWeekday || c.wd < todayWeekday ? "sem coleta nesta semana" : "ainda não aconteceu nesta semana";
+      html += `<div class="heatmap-cell heatmap-projected ${todayCls}" style="${bg}" title="${day} ${c.hour}h — previsão pela média histórica (${why}). ${hist}">${Math.round(c.h.avg)}</div>`;
+    } else {
+      html += `<div class="heatmap-cell heatmap-empty ${todayCls}" title="${day} ${c.hour}h — sem dados">–</div>`;
+    }
+  });
   html += "</div>";
   wrap.innerHTML = html;
 }
@@ -3009,14 +3072,28 @@ function periodTotalVolume(rows) {
 // Card neutro (sem julgamento de "bom"/"ruim" — comparar dois períodos
 // arbitrários não tem um sentido único de melhora, diferente dos cards de
 // hoje x ontem). Mostra A → B e a variação percentual.
+function verdictStr(a, b, higherIsBetter) {
+  if (a == null || b == null || !a) return "–";
+  const diff = Math.round(((b - a) / a) * 100);
+  if (diff === 0) return "Sem variação";
+  return (diff > 0) === higherIsBetter ? "Melhorou" : "Piorou";
+}
 function renderNeutralCompareCard(label, valA, valB, opts = {}) {
-  const { unit = "", isTimeSeconds = false } = opts;
+  // higherIsBetter: true = quanto maior melhor (Nível de Serviço) · false = quanto menor melhor
+  // (Volume, TME, TMA). A variação é SEMPRE calculada de A para B: (B − A) ÷ A.
+  const { unit = "", isTimeSeconds = false, higherIsBetter = null } = opts;
   const fmt = (v) => (isTimeSeconds ? formatSeconds(v) : `${Math.round(v)}${unit}`);
   let deltaHtml = '<p class="comparison-card__empty">Sem dados suficientes para comparar.</p>';
   if (valA != null && valB != null && valA !== 0) {
     const diff = Math.round(((valB - valA) / valA) * 100);
     const arrow = diff > 0 ? "▲" : diff < 0 ? "▼" : "＝";
-    deltaHtml = `<p class="comparison-card__delta" data-trend="neutral">${arrow} ${Math.abs(diff)}% (B vs. A)</p>`;
+    let trend = "flat";
+    let verdict = " · sem variação";
+    if (diff !== 0) {
+      if (higherIsBetter === null) { trend = "neutral"; verdict = ""; }
+      else { const improved = (diff > 0) === higherIsBetter; trend = improved ? "good" : "bad"; verdict = improved ? " · melhorou" : " · piorou"; }
+    }
+    deltaHtml = `<p class="comparison-card__delta" data-trend="${trend}">${arrow} ${Math.abs(diff)}%${verdict} <span style="font-weight:600;opacity:.75;">(A → B)</span></p>`;
   }
   return `
     <div class="comparison-card">
@@ -3056,7 +3133,7 @@ function renderCompareHeatmap(pivotA, pivotB) {
       } else {
         const pct = Math.min(1, Math.abs(diff) / maxAbsDiff);
         const alpha = 0.12 + pct * 0.75;
-        const base = diff >= 0 ? [214, 116, 30] : [14, 147, 168]; // laranja = subiu em B · teal = caiu em B
+        const base = diff >= 0 ? [201, 70, 60] : [31, 157, 110]; // vermelho = volume subiu de A para B · verde = diminuiu
         const bg = [255, 255, 255];
         const rgb = base.map((c, i) => Math.round(bg[i] * (1 - alpha) + c * alpha));
         const textColor = alpha > 0.55 ? "#fff" : "var(--ink)";
@@ -3134,10 +3211,10 @@ async function runCompare() {
     const slA = weightedAvgBy(rowsA, "service_level"), slB = weightedAvgBy(rowsB, "service_level");
 
     document.getElementById("compareSummaryGrid").innerHTML = [
-      renderNeutralCompareCard("Volume total", totalA, totalB),
-      renderNeutralCompareCard("TME médio", tmeA, tmeB, { isTimeSeconds: true }),
-      renderNeutralCompareCard("TMA médio", tmaA, tmaB, { isTimeSeconds: true }),
-      renderNeutralCompareCard("Nível de Serviço médio", slA, slB, { unit: "%" }),
+      renderNeutralCompareCard("Volume total", totalA, totalB, { higherIsBetter: false }),
+      renderNeutralCompareCard("TME médio", tmeA, tmeB, { isTimeSeconds: true, higherIsBetter: false }),
+      renderNeutralCompareCard("TMA médio", tmaA, tmaB, { isTimeSeconds: true, higherIsBetter: false }),
+      renderNeutralCompareCard("Nível de Serviço médio", slA, slB, { unit: "%", higherIsBetter: true }),
     ].join("");
 
     const { matrix: pivotA } = buildHeatPivot(rowsA);
@@ -3173,11 +3250,11 @@ function exportCompareXlsx() {
     ["Filas incluídas", r.queuesLabel],
     ["Gerado em", new Date().toLocaleString("pt-BR")],
     [],
-    ["Indicador", "Período A", "Período B", "Variação (B vs. A)"],
-    ["Volume total", r.totalA, r.totalB, pctStr(r.totalA, r.totalB)],
-    ["TME médio", formatSeconds(r.tmeA), formatSeconds(r.tmeB), pctStr(r.tmeA, r.tmeB)],
-    ["TMA médio", formatSeconds(r.tmaA), formatSeconds(r.tmaB), pctStr(r.tmaA, r.tmaB)],
-    ["Nível de Serviço médio", `${Math.round(r.slA ?? 0)}%`, `${Math.round(r.slB ?? 0)}%`, pctStr(r.slA, r.slB)],
+    ["Indicador", "Período A", "Período B", "Variação (A para B)", "Resultado"],
+    ["Volume total", r.totalA, r.totalB, pctStr(r.totalA, r.totalB), verdictStr(r.totalA, r.totalB, false)],
+    ["TME médio", formatSeconds(r.tmeA), formatSeconds(r.tmeB), pctStr(r.tmeA, r.tmeB), verdictStr(r.tmeA, r.tmeB, false)],
+    ["TMA médio", formatSeconds(r.tmaA), formatSeconds(r.tmaB), pctStr(r.tmaA, r.tmaB), verdictStr(r.tmaA, r.tmaB, false)],
+    ["Nível de Serviço médio", `${Math.round(r.slA ?? 0)}%`, `${Math.round(r.slB ?? 0)}%`, pctStr(r.slA, r.slB), verdictStr(r.slA, r.slB, true)],
   ];
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryAOA), "Resumo");
 
@@ -3218,19 +3295,19 @@ function exportComparePdf() {
 
   doc.autoTable({
     startY: 39,
-    head: [["Indicador", "Período A", "Período B", "Variação (B vs. A)"]],
+    head: [["Indicador", "Período A", "Período B", "Variação (A para B)", "Resultado"]],
     body: [
-      ["Volume total", String(r.totalA), String(r.totalB), pctStr(r.totalA, r.totalB)],
-      ["TME médio", formatSeconds(r.tmeA), formatSeconds(r.tmeB), pctStr(r.tmeA, r.tmeB)],
-      ["TMA médio", formatSeconds(r.tmaA), formatSeconds(r.tmaB), pctStr(r.tmaA, r.tmaB)],
-      ["Nível de Serviço médio", `${Math.round(r.slA ?? 0)}%`, `${Math.round(r.slB ?? 0)}%`, pctStr(r.slA, r.slB)],
+      ["Volume total", String(r.totalA), String(r.totalB), pctStr(r.totalA, r.totalB), verdictStr(r.totalA, r.totalB, false)],
+      ["TME médio", formatSeconds(r.tmeA), formatSeconds(r.tmeB), pctStr(r.tmeA, r.tmeB), verdictStr(r.tmeA, r.tmeB, false)],
+      ["TMA médio", formatSeconds(r.tmaA), formatSeconds(r.tmaB), pctStr(r.tmaA, r.tmaB), verdictStr(r.tmaA, r.tmaB, false)],
+      ["Nível de Serviço médio", `${Math.round(r.slA ?? 0)}%`, `${Math.round(r.slB ?? 0)}%`, pctStr(r.slA, r.slB), verdictStr(r.slA, r.slB, true)],
     ],
     theme: "grid", headStyles: { fillColor: [11, 116, 136] }, margin: { left: 14, right: 14 },
   });
 
   doc.addPage();
   doc.setFont("helvetica", "bold"); doc.setFontSize(13);
-  doc.text("Variação por dia da semana e horário (B em relação a A)", 14, 16);
+  doc.text("Variação por dia da semana e horário (de A para B)", 14, 16);
   doc.autoTable({
     startY: 22,
     head: [["Hora", ...WEEKDAY_LABELS.slice(1)]],
@@ -3252,7 +3329,7 @@ function exportComparePdf() {
           const diff = ((b - a) / a) * 100;
           const pct = Math.min(1, Math.abs(diff) / 60);
           const alpha = 0.12 + pct * 0.75;
-          const base = diff >= 0 ? [214, 116, 30] : [14, 147, 168];
+          const base = diff >= 0 ? [201, 70, 60] : [31, 157, 110];
           const bg = [255, 255, 255];
           data.cell.styles.fillColor = base.map((c, i) => Math.round(bg[i] * (1 - alpha) + c * alpha));
           if (alpha > 0.55) data.cell.styles.textColor = [255, 255, 255];
@@ -3420,13 +3497,18 @@ document.getElementById("compareGranularity")?.addEventListener("change", () => 
     const list = document.getElementById('polaris-learning-list'); list.textContent = 'Carregando…';
     const { data, error } = await sb.from('polaris_subject_candidates').select('id,sample_subject,occurrences,category_key,first_seen_at,last_seen_at').eq('status', 'pending').order('occurrences', { ascending: false }).limit(50);
     if (error) return list.textContent = 'Não foi possível carregar os candidatos.';
-    list.innerHTML = (data || []).map((c) => `<div class="polaris-admin-row" style="grid-template-columns:1.6fr 90px 1fr 110px"><span><strong>${esc(c.sample_subject)}</strong><br><small>Visto ${esc(new Date(c.last_seen_at).toLocaleString('pt-BR'))}</small></span><span>${c.occurrences} ocorrência(s)</span><input data-learning-category="${esc(c.id)}" placeholder="categoria" aria-label="Categoria para ${esc(c.sample_subject)}"/><button type="button" data-learning-approve="${esc(c.id)}">Aprovar</button></div>`).join('') || '<p>Nenhum candidato pendente no momento.</p>';
+    list.innerHTML = (data || []).map((c) => `<div class="polaris-admin-row" style="grid-template-columns:1.5fr 80px 1fr 1fr 100px"><span><strong>${esc(c.sample_subject)}</strong><br><small>Visto ${esc(new Date(c.last_seen_at).toLocaleString('pt-BR'))}</small></span><span>${c.occurrences} ocorrência(s)</span><input data-learning-category="${esc(c.id)}" placeholder="categoria" aria-label="Categoria para ${esc(c.sample_subject)}"/><input data-learning-keywords="${esc(c.id)}" placeholder="palavras exatas (opcional, separe por vírgula)" aria-label="Palavras-chave exatas para ${esc(c.sample_subject)}"/><button type="button" data-learning-approve="${esc(c.id)}">Aprovar</button></div>`).join('') || '<p>Nenhum candidato pendente no momento.</p>';
     list.querySelectorAll('[data-learning-approve]').forEach((btn) => btn.addEventListener('click', async () => {
       const id = btn.dataset.learningApprove; const input = list.querySelector(`[data-learning-category="${id}"]`); const label = input.value.trim();
       if (!label) return setAdminMessage('Informe a categoria antes de aprovar.');
       const key = label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '').slice(0, 60);
       const candidate = (data || []).find((x) => x.id === id); if (!candidate) return;
-      const terms = significantWords(normalizeSubjectText(candidate.sample_subject));
+      // Palavras-chave NÃO são mais todas as palavras do assunto de exemplo (isso fazia
+      // a categoria "engolir" outros assuntos). Vale só: palavras da própria categoria +
+      // as palavras exatas que você digitar no campo opcional. Prefixo "=" = palavra inteira.
+      const extraInput = list.querySelector(`[data-learning-keywords="${id}"]`);
+      const extra = (extraInput ? extraInput.value : '').split(',').map((w) => normalizeSubjectText(w)).filter((w) => w.length >= 3);
+      const terms = [...new Set([...ruleLabelAnchors(label), ...extra])].map((w) => '=' + w);
       const ruleResult = await sb.from('polaris_subject_rules').insert({ category_key: key, category_label: label, keywords: terms, phrases: [candidate.sample_subject], created_by: polarisUserId });
       if (ruleResult.error) return setAdminMessage('Não foi possível salvar a regra.');
       const updateResult = await sb.from('polaris_subject_candidates').update({ status: 'approved', suggested_category_key: key, reviewed_by: polarisUserId, reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq('id', id);
