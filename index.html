@@ -453,6 +453,9 @@
 </style>
 <style>
 .polaris-auth-gate{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;background:radial-gradient(circle at 20% 20%,#153a45,#07151b 55%,#040a0d);padding:24px}.polaris-auth-card,.polaris-admin-card{width:min(460px,100%);background:#f8fbfc;border:1px solid rgba(255,255,255,.25);border-radius:22px;box-shadow:0 24px 80px #0008;padding:34px;color:#102229}.polaris-auth-mark{width:72px;height:72px;border-radius:18px;display:grid;place-items:center;background:#0b7488;color:#fff;font-weight:800;font-size:25px;overflow:hidden}.polaris-auth-mark img{width:100%;height:100%;object-fit:cover}.polaris-auth-kicker{font-size:11px;letter-spacing:.16em;font-weight:800;color:#0b7488;margin:22px 0 8px}.polaris-auth-card h1,.polaris-admin-card h2{margin:0 0 10px}.polaris-auth-copy{color:#5a6b70;line-height:1.55}.polaris-auth-form,.polaris-admin-form{display:grid;gap:12px;margin-top:22px}.polaris-auth-form label{display:grid;gap:6px;font-size:13px;font-weight:700}.polaris-auth-form input,.polaris-admin-form input,.polaris-admin-form select{border:1px solid #cbd8dc;border-radius:10px;padding:12px;background:#fff;font:inherit}.polaris-auth-submit,.polaris-auth-secondary{border:0;border-radius:10px;padding:12px;font-weight:800;cursor:pointer}.polaris-auth-submit{background:#0b7488;color:#fff}.polaris-auth-secondary{background:#e6f1f3;color:#0b5a69}.polaris-auth-link{border:0;background:none;color:#0b7488;cursor:pointer;text-decoration:underline}.polaris-auth-message{min-height:20px;font-size:13px;color:#a3342a}.polaris-auth-form[hidden]{display:none!important}.tv-mode-btn svg{width:19px;height:19px}.tv-settings-card{border:1px solid rgba(11,116,136,.18)}body.tv-mode .header__right,body.tv-mode #reportsToggleBtn,body.tv-mode #monitorToggleBtn,body.tv-mode #panelToggleBtn,body.tv-mode #polaris-admin-open{display:none!important}body.tv-mode .header{justify-content:space-between}body.tv-mode .header__brand{display:flex!important;align-items:center}body.tv-mode #panel-config,body.tv-mode #panel-reports,body.tv-mode #panel-monitor{display:none!important}body.tv-mode #panel-painel{display:flex!important;flex:1 1 auto;width:100%;max-width:none;min-width:0;margin:0;overflow:hidden}body.tv-mode .app{padding:0}
+/* Perfil TV: somente visualização na interface; a autorização de dados também deve ser aplicada no backend/RLS. */
+body.tv-only #panel-config, body.tv-only #panel-reports, body.tv-only #panel-monitor,
+body.tv-only #polaris-account-open, body.tv-only #polaris-signout-btn, body.tv-only #polaris-admin-open { display: none !important; }
 /* Modo TV: composição fluida para monitores, TVs e resoluções ultrawide */
 body.tv-mode { overflow: hidden; }
 body.tv-mode .page {
@@ -543,107 +546,400 @@ body.tv-mode #panel-painel { overflow: auto !important; }
   body.tv-mode #panel-painel .grid-top { grid-template-columns: 1fr !important; }
   body.tv-mode #panel-painel .hero-col { grid-template-columns: 1fr 1fr; }
 }
+
+  /* ===================== Ajustes responsivos Polaris =====================
+     Mantém os IDs, fontes de dados e lógica de negócio existentes.
+     Os cards podem encolher junto com a viewport/zoom sem empurrar conteúdo.
+  */
+  *, *::before, *::after { box-sizing: border-box; }
+  html { min-width: 0; }
+  body { min-width: 0; }
+  .panel, .panel.is-active, #panel-painel { min-width: 0; }
+  .grid-top { grid-template-columns: minmax(220px, clamp(220px, 19vw, 340px)) minmax(0, 1fr); }
+  .hero-col, .stat-grid, .stat, .stat__head, .stat__label-wrap,
+  .target-bar, .target-bar__label-block, .target-bar__track-wrap,
+  .agent-section, .topics-card, .table-wrap { min-width: 0; }
+  .stat-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .stat__head { align-items: flex-start; }
+  .stat__label-wrap { overflow-wrap: anywhere; }
+  .stat__label { line-height: 1.2; }
+  .stat__value {
+    max-width: 100%;
+    font-size: clamp(26px, min(3.3vw, 6.5vh), 50px);
+    line-height: 1.05;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat__value-secondary { font-size: clamp(12px, 1.15vw, 17px); }
+  .waiting-card__value { font-size: clamp(52px, min(6.6vw, 13vh), 108px); }
+  .mood-card__title { overflow-wrap: anywhere; }
+  .target-bar { gap: clamp(8px, 1vw, 18px); }
+  .target-bar__label-block { flex: 0 1 190px; }
+  .target-bar__count { white-space: nowrap; font-size: clamp(17px, 1.55vw, 22px); }
+  .target-bar__track-wrap { flex: 1 1 160px; }
+  .agent-section .table-wrap { overflow-x: auto; }
+  .agent-table { width: 100%; }
+  .agent-table th, .agent-table td { overflow-wrap: anywhere; }
+  .topics-grid { grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); }
+  .topic-pill { min-width: 0; }
+  .topic-pill__label { overflow-wrap: anywhere; }
+
+  /* TVs e monitores: limitar categorias a cards legíveis e sem quebra. */
+  body.tv-mode #topicsCard { width: 100%; }
+  body.tv-mode .topics-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(6px, .7vw, 12px); }
+  body.tv-mode .topic-pill { padding: clamp(8px, .8vw, 14px); min-width: 0; }
+  body.tv-mode .topic-pill__count { font-size: clamp(22px, 2.2vw, 34px); white-space: nowrap; }
+  body.tv-mode .topic-pill__label { font-size: clamp(11px, 1vw, 15px); line-height: 1.2; }
+  body.tv-mode .grid-top, body.tv-mode .stat-grid { min-height: 0; }
+  body.tv-mode .stat { overflow: hidden; }
+
+  @media (max-width: 1100px) {
+    .grid-top { grid-template-columns: minmax(190px, 0.8fr) minmax(0, 1.8fr); }
+    .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto; }
+    .stat { min-height: 125px; }
+    body.tv-mode .topics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 760px) {
+    .grid-top { grid-template-columns: minmax(0, 1fr); }
+    .hero-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .waiting-card, .mood-card { min-height: 145px; }
+    .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .target-bar { flex-wrap: wrap; }
+    .target-bar__label-block { flex: 1 1 100%; }
+    .target-bar__track-wrap { flex: 1 1 100%; }
+    .target-bar__count { margin-left: auto; }
+    body.tv-mode .hero-col { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 480px) {
+    .hero-col, .stat-grid { grid-template-columns: minmax(0, 1fr); }
+    .waiting-card, .mood-card { min-height: 120px; }
+    .stat { min-height: 115px; }
+    .stat__value { font-size: clamp(28px, 9vw, 42px); }
+    .target-bar { padding: 12px; }
+    .target-bar__count { font-size: 18px; }
+    body.tv-mode .topics-grid { grid-template-columns: minmax(0, 1fr); }
+  }
 </style>
-<style id="polaris-tv-fluid-max">
-/* Modo TV: escala agressiva e fluida conforme a área visível, sem depender do zoom do navegador. */
-body.tv-mode { overflow: hidden !important; }
-body.tv-mode .page {
-  box-sizing: border-box !important; width: 100vw !important; height: 100vh !important; height: 100dvh !important;
-  max-width: none !important; margin: 0 !important; padding: clamp(10px, 1.1vw, 28px) !important;
-  gap: clamp(10px, 1vw, 24px) !important; overflow: hidden !important;
+<style>
+
+/* Cards independentes do modo TV: categorias e atendimentos com maior tempo. */
+body.tv-mode #panel-painel .tv-agent-tma-card { flex: 0 0 auto; max-height: 24vh; overflow: auto; }
+body.tv-mode #panel-painel .tv-agent-tma-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(8px, .8vw, 14px); }
+.tv-agent-tma-item { min-width: 0; padding: clamp(10px, .9vw, 16px); border: 1px solid #d6e8ed; border-radius: 12px; background: #f8fcfd; display: grid; gap: 5px; }
+.tv-agent-tma-item__top { display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
+.tv-agent-tma-item__name { font-weight:800; overflow-wrap:anywhere; }
+.tv-agent-tma-item__time { font-size:clamp(20px, 1.8vw, 34px); font-weight:900; white-space:nowrap; color:#0b7488; font-variant-numeric:tabular-nums; }
+.tv-agent-tma-item__detail { font-size:clamp(12px, .9vw, 17px); color:#526b75; overflow-wrap:anywhere; }
+.tv-agent-tma-item__subject { font-size:clamp(12px, .95vw, 18px); font-weight:650; overflow-wrap:anywhere; }
+.tv-agent-tma-item__link { color:#087d95; text-decoration:underline; }
+.topic-pill__breakdown { display:flex; gap:10px; flex-wrap:wrap; color:#55717b; font-size:clamp(11px, .8vw, 15px); font-weight:700; }
+.topic-pill__breakdown span { white-space:nowrap; }
+@media (max-width: 1000px) { body.tv-mode #panel-painel .tv-agent-tma-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { body.tv-mode #panel-painel .tv-agent-tma-grid { grid-template-columns: minmax(0, 1fr); } }
+
+</style>
+
+<style id="polaris-tv-fit-final">
+/* Ajuste final do wallboard: manter os indicadores grandes e acomodar os módulos ativos sem rolagem em telas horizontais. */
+@media (min-width: 761px) and (orientation: landscape) {
+  html, body { min-height: 100%; }
+  body.tv-mode { height: 100dvh !important; min-height: 0 !important; overflow: hidden !important; }
+  body.tv-mode .page {
+    display: flex !important; flex-direction: column !important;
+    width: 100vw !important; height: 100dvh !important; min-height: 0 !important;
+    padding: clamp(6px, .75vw, 14px) !important;
+    gap: clamp(6px, .65vw, 12px) !important; overflow: hidden !important;
+  }
+  body.tv-mode .header {
+    flex: 0 0 auto !important; min-height: clamp(58px, 8.5vh, 96px) !important;
+    padding: clamp(8px, .9vw, 16px) clamp(12px, 1.4vw, 24px) !important;
+    border-radius: clamp(10px, .9vw, 16px) !important;
+  }
+  body.tv-mode .header h1 { font-size: clamp(25px, 2.5vw, 44px) !important; line-height: 1.05 !important; }
+  body.tv-mode .header__subtitle { font-size: clamp(12px, 1.15vw, 20px) !important; line-height: 1.15 !important; }
+  body.tv-mode .header__mark { width: clamp(36px, 3.2vw, 56px) !important; height: clamp(36px, 3.2vw, 56px) !important; }
+  body.tv-mode .app { display: flex !important; flex: 1 1 auto !important; min-height: 0 !important; width: 100% !important; overflow: hidden !important; }
+  body.tv-mode #panel-painel {
+    display: flex !important; flex: 1 1 auto !important; flex-direction: column !important;
+    min-height: 0 !important; height: 100% !important; gap: clamp(6px, .65vw, 12px) !important;
+    padding: 0 !important; margin: 0 !important; overflow: hidden !important;
+  }
+  body.tv-mode #panel-painel .grid-top {
+    flex: 1 1 0 !important; min-height: 0 !important; height: auto !important;
+    grid-template-columns: minmax(190px, 27%) minmax(0, 1fr) !important;
+    gap: clamp(7px, .7vw, 13px) !important; overflow: hidden !important;
+  }
+  body.tv-mode #panel-painel .hero-col { display: flex !important; flex-direction: column !important; min-height: 0 !important; gap: clamp(7px, .7vw, 13px) !important; }
+  body.tv-mode #panel-painel .waiting-card,
+  body.tv-mode #panel-painel .mood-card { flex: 1 1 0 !important; min-height: 0 !important; height: auto !important; padding: clamp(10px, 1vw, 18px) !important; overflow: hidden !important; }
+  body.tv-mode #panel-painel .waiting-card__label { font-size: clamp(11px, .9vw, 16px) !important; line-height: 1.1 !important; }
+  body.tv-mode #panel-painel .waiting-card__value { font-size: clamp(62px, min(7.4vw, 12vh), 124px) !important; line-height: .95 !important; }
+  body.tv-mode #panel-painel .mood-card__icon svg { width: clamp(28px, 3vw, 48px) !important; height: auto !important; }
+  body.tv-mode #panel-painel .mood-card__title { font-size: clamp(20px, 2vw, 34px) !important; line-height: 1.05 !important; }
+  body.tv-mode #panel-painel .mood-card__message { font-size: clamp(12px, 1.15vw, 19px) !important; line-height: 1.2 !important; }
+  body.tv-mode #panel-painel .stat-grid {
+    display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    grid-template-rows: repeat(2, minmax(0, 1fr)) !important; min-height: 0 !important;
+    gap: clamp(7px, .7vw, 13px) !important; overflow: hidden !important;
+  }
+  body.tv-mode #panel-painel .stat { min-width: 0 !important; min-height: 0 !important; height: auto !important; padding: clamp(9px, .9vw, 16px) !important; overflow: hidden !important; }
+  body.tv-mode #panel-painel .stat__label { font-size: clamp(13px, 1.15vw, 20px) !important; line-height: 1.12 !important; }
+  body.tv-mode #panel-painel .stat__sublabel { font-size: clamp(10px, .85vw, 15px) !important; line-height: 1.15 !important; }
+  body.tv-mode #panel-painel .stat__value { font-size: clamp(38px, min(4.8vw, 8.3vh), 80px) !important; line-height: 1 !important; white-space: nowrap !important; }
+  body.tv-mode #panel-painel .stat__value-secondary { font-size: clamp(13px, 1.3vw, 22px) !important; line-height: 1 !important; }
+  body.tv-mode #panel-painel .target-bar {
+    display: flex !important; flex: 0 0 auto !important; min-height: 0 !important;
+    align-items: center !important; gap: clamp(8px, .8vw, 14px) !important;
+    padding: clamp(7px, .65vw, 12px) !important; overflow: hidden !important;
+  }
+  body.tv-mode #panel-painel .target-bar__label-block { flex: 0 1 170px !important; min-width: 110px !important; }
+  body.tv-mode #panel-painel .target-bar__label { font-size: clamp(11px, .95vw, 16px) !important; line-height: 1.1 !important; }
+  body.tv-mode #panel-painel .target-bar__hint { font-size: clamp(10px, .78vw, 13px) !important; line-height: 1.1 !important; }
+  body.tv-mode #panel-painel .target-bar__track-wrap { flex: 1 1 auto !important; min-width: 0 !important; }
+  body.tv-mode #panel-painel .target-bar__status { margin-top: 3px !important; font-size: clamp(10px, .8vw, 14px) !important; line-height: 1.1 !important; }
+  body.tv-mode #panel-painel .target-bar__count { flex: 0 0 auto !important; font-size: clamp(18px, 1.8vw, 30px) !important; line-height: 1 !important; }
+  body.tv-mode #panel-painel .target-bar__count span.dim { font-size: clamp(13px, 1.25vw, 21px) !important; }
+  body.tv-mode #panel-painel #topicsCard,
+  body.tv-mode #panel-painel #tvAgentTmaCard {
+    flex: 0 1 auto !important; min-height: 0 !important; max-height: 18vh !important;
+    padding: clamp(7px, .7vw, 12px) !important; overflow: hidden !important;
+  }
+  body.tv-mode #panel-painel .topics-card__head { margin-bottom: clamp(4px, .4vw, 7px) !important; gap: 4px !important; }
+  body.tv-mode #panel-painel .topics-card__head h2 { font-size: clamp(13px, 1.15vw, 19px) !important; line-height: 1.1 !important; }
+  body.tv-mode #panel-painel .topics-card__hint { font-size: clamp(10px, .8vw, 13px) !important; line-height: 1.1 !important; }
+  body.tv-mode #panel-painel .topics-grid { display: grid !important; grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: clamp(5px, .5vw, 9px) !important; min-height: 0 !important; }
+  body.tv-mode #panel-painel .topic-pill { display: grid !important; align-content: center !important; gap: 3px !important; min-width: 0 !important; min-height: 0 !important; padding: clamp(6px, .55vw, 10px) !important; overflow: hidden !important; }
+  body.tv-mode #panel-painel .topic-pill__count { font-size: clamp(24px, 2.4vw, 40px) !important; line-height: .98 !important; }
+  body.tv-mode #panel-painel .topic-pill__label { display: -webkit-box !important; -webkit-line-clamp: 2 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; overflow-wrap: anywhere !important; font-size: clamp(10px, .9vw, 15px) !important; line-height: 1.1 !important; }
+  body.tv-mode #panel-painel .topic-pill__breakdown { display: flex !important; flex-wrap: nowrap !important; gap: clamp(4px, .5vw, 8px) !important; font-size: clamp(9px, .72vw, 12px) !important; line-height: 1.1 !important; }
+  body.tv-mode #panel-painel .topic-pill__breakdown span { white-space: nowrap !important; }
+  body.tv-mode #panel-painel .tv-agent-tma-grid { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: clamp(5px, .5vw, 9px) !important; }
+  body.tv-mode #panel-painel .tv-agent-tma-item { padding: clamp(6px, .55vw, 10px) !important; gap: 3px !important; overflow: hidden !important; }
+  body.tv-mode #panel-painel .tv-agent-tma-item__name { font-size: clamp(10px, .85vw, 14px) !important; line-height: 1.1 !important; }
+  body.tv-mode #panel-painel .tv-agent-tma-item__time { font-size: clamp(19px, 1.8vw, 30px) !important; line-height: 1 !important; }
+  body.tv-mode #panel-painel .tv-agent-tma-item__detail,
+  body.tv-mode #panel-painel .tv-agent-tma-item__subject { font-size: clamp(10px, .78vw, 13px) !important; line-height: 1.1 !important; }
+  /* Se as duas seções extras estiverem ativas, elas dividem a faixa inferior. */
+  body.tv-mode #panel-painel #topicsCard[style*="display: block"] + #tvAgentTmaCard { max-height: 15vh !important; }
 }
-body.tv-mode .header {
-  flex: 0 0 auto !important; min-height: clamp(76px, 9.5vh, 150px) !important;
-  padding: clamp(12px, 1.4vw, 32px) clamp(18px, 2vw, 44px) !important;
-  gap: clamp(12px, 1.5vw, 30px) !important; border-radius: clamp(12px, 1.1vw, 24px) !important;
-}
-body.tv-mode .header h1 { font-size: clamp(30px, 3.2vw, 72px) !important; line-height: 1.05 !important; }
-body.tv-mode .header__subtitle { font-size: clamp(17px, 1.65vw, 36px) !important; line-height: 1.2 !important; }
-body.tv-mode .header__mark { width: clamp(52px, 4.2vw, 92px) !important; height: clamp(52px, 4.2vw, 92px) !important; }
-body.tv-mode #panel-painel {
-  flex: 1 1 0 !important; min-height: 0 !important; height: auto !important;
-  overflow: auto !important; padding: 0 !important; gap: clamp(12px, 1.2vw, 28px) !important;
-}
-body.tv-mode #panel-painel .grid-top {
-  flex: 1 0 auto !important; min-height: min(68vh, 760px) !important; width: 100% !important;
-  grid-template-columns: minmax(260px, .78fr) minmax(0, 2.22fr) !important;
-  gap: clamp(12px, 1.4vw, 32px) !important;
-}
-body.tv-mode #panel-painel .hero-col { gap: clamp(12px, 1.2vw, 28px) !important; }
-body.tv-mode #panel-painel .waiting-card,
-body.tv-mode #panel-painel .mood-card { padding: clamp(18px, 1.8vw, 40px) !important; border-radius: clamp(12px, 1.1vw, 24px) !important; }
-body.tv-mode #panel-painel .waiting-card__label { font-size: clamp(20px, 1.8vw, 40px) !important; line-height: 1.15 !important; }
-body.tv-mode #panel-painel .waiting-card__value { font-size: clamp(84px, 8.5vw, 180px) !important; line-height: .98 !important; }
-body.tv-mode #panel-painel .mood-card__icon { width: clamp(56px, 5vw, 110px) !important; height: clamp(56px, 5vw, 110px) !important; }
-body.tv-mode #panel-painel .mood-card__title { font-size: clamp(30px, 2.6vw, 58px) !important; line-height: 1.08 !important; }
-body.tv-mode #panel-painel .mood-card__message { max-width: 100% !important; font-size: clamp(19px, 1.65vw, 36px) !important; line-height: 1.25 !important; }
-body.tv-mode #panel-painel .stat-grid { gap: clamp(12px, 1.3vw, 30px) !important; }
-body.tv-mode #panel-painel .stat-grid > * { min-width: 0 !important; padding: clamp(16px, 1.65vw, 36px) !important; border-radius: clamp(12px, 1vw, 22px) !important; }
-body.tv-mode #panel-painel .stat__label { font-size: clamp(22px, 2.05vw, 46px) !important; line-height: 1.12 !important; overflow-wrap: anywhere !important; }
-body.tv-mode #panel-painel .stat__sublabel { font-size: clamp(17px, 1.5vw, 34px) !important; line-height: 1.2 !important; }
-body.tv-mode #panel-painel .stat__value { font-size: clamp(68px, 7vw, 154px) !important; line-height: .98 !important; overflow-wrap: anywhere !important; }
-body.tv-mode #panel-painel .stat__value-secondary { font-size: clamp(26px, 2.2vw, 48px) !important; line-height: 1.12 !important; }
-body.tv-mode #panel-painel .target-bar,
-body.tv-mode #panel-painel .target-bar * { font-size: clamp(18px, 1.55vw, 34px) !important; line-height: 1.25 !important; }
-body.tv-mode #panel-painel .target-bar__count,
-body.tv-mode #panel-painel .target-bar__count * { font-size: clamp(32px, 3vw, 66px) !important; }
-body.tv-mode #panel-painel .topics-card { max-height: 28vh !important; overflow: auto !important; }
-body.tv-mode #panel-painel .topics-card,
-body.tv-mode #panel-painel .topics-card * { font-size: clamp(18px, 1.5vw, 34px) !important; line-height: 1.25 !important; }
-body.tv-mode #panel-painel .topics-card .topic-pill__count { font-size: clamp(32px, 3vw, 66px) !important; }
-/* Telas estreitas/verticais: mantém a fonte grande e permite rolagem em vez de comprimir os cartões. */
-@media (max-width: 1100px), (max-aspect-ratio: 4/3) {
-  body.tv-mode { overflow: auto !important; }
-  body.tv-mode .page { min-height: 100vh !important; height: auto !important; overflow: visible !important; }
-  body.tv-mode #panel-painel { overflow: visible !important; }
-  body.tv-mode #panel-painel .grid-top { grid-template-columns: minmax(0, 1fr) !important; min-height: 0 !important; }
-  body.tv-mode #panel-painel .hero-col { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+@media (max-width: 760px), (orientation: portrait) {
+  body.tv-mode { height: auto !important; min-height: 100dvh !important; overflow: auto !important; }
+  body.tv-mode .page { height: auto !important; min-height: 100dvh !important; overflow: visible !important; }
+  body.tv-mode #panel-painel { height: auto !important; overflow: visible !important; }
+  body.tv-mode #panel-painel .grid-top { flex: 0 0 auto !important; grid-template-columns: minmax(0, 1fr) !important; }
   body.tv-mode #panel-painel .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; grid-template-rows: auto !important; }
-}
-@media (max-width: 560px) {
-  body.tv-mode #panel-painel .hero-col,
-  body.tv-mode #panel-painel .stat-grid { grid-template-columns: minmax(0, 1fr) !important; }
-  body.tv-mode .header h1 { font-size: clamp(28px, 7vw, 42px) !important; }
+  body.tv-mode #panel-painel #topicsCard, body.tv-mode #panel-painel #tvAgentTmaCard { max-height: none !important; overflow: visible !important; }
+  body.tv-mode #panel-painel .topics-grid, body.tv-mode #panel-painel .tv-agent-tma-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
 }
 </style>
 
-<style id="polaris-tv-ultra-responsive-fix">
-/* TV ULTRA: leitura a distância, com escala baseada na área útil da tela. */
-body.tv-mode { --tv-unit: min(1vw, 1.15vh); }
-body.tv-mode .page { width:100% !important; max-width:none !important; min-height:100vh !important; box-sizing:border-box !important; padding:clamp(16px, 1.6vw, 36px) !important; gap:clamp(14px, 1.35vw, 30px) !important; }
-body.tv-mode .header { min-height:clamp(90px, 10vh, 160px) !important; padding:clamp(18px, 2vw, 42px) !important; gap:clamp(16px, 1.5vw, 32px) !important; }
-body.tv-mode .header h1 { font-size:clamp(36px, 3.4vw, 76px) !important; line-height:1.05 !important; }
-body.tv-mode .header__subtitle { font-size:clamp(20px, 1.8vw, 40px) !important; line-height:1.2 !important; }
-body.tv-mode .header__mark { width:clamp(58px, 4.8vw, 100px) !important; height:clamp(58px, 4.8vw, 100px) !important; }
-body.tv-mode #panel-painel { width:100% !important; max-width:none !important; }
-body.tv-mode #panel-painel .grid-top { grid-template-columns:minmax(300px, .8fr) minmax(0, 2.2fr) !important; gap:clamp(16px, 1.6vw, 34px) !important; }
-body.tv-mode #panel-painel .hero-col { gap:clamp(14px, 1.4vw, 30px) !important; }
-body.tv-mode #panel-painel .waiting-card, body.tv-mode #panel-painel .mood-card { padding:clamp(22px, 2vw, 44px) !important; }
-body.tv-mode #panel-painel .waiting-card__label { font-size:clamp(24px, 2.2vw, 48px) !important; line-height:1.12 !important; }
-body.tv-mode #panel-painel .waiting-card__value { font-size:clamp(100px, 9.5vw, 200px) !important; line-height:.95 !important; }
-body.tv-mode #panel-painel .mood-card__title { font-size:clamp(34px, 3vw, 64px) !important; line-height:1.08 !important; }
-body.tv-mode #panel-painel .mood-card__message { font-size:clamp(22px, 1.9vw, 40px) !important; line-height:1.2 !important; }
-body.tv-mode #panel-painel .stat-grid { gap:clamp(14px, 1.5vw, 32px) !important; }
-body.tv-mode #panel-painel .stat-grid > * { padding:clamp(20px, 2vw, 42px) !important; min-width:0 !important; }
-body.tv-mode #panel-painel .stat__label { font-size:clamp(26px, 2.3vw, 50px) !important; line-height:1.1 !important; overflow-wrap:anywhere !important; }
-body.tv-mode #panel-painel .stat__sublabel { font-size:clamp(20px, 1.7vw, 36px) !important; line-height:1.2 !important; }
-body.tv-mode #panel-painel .stat__value { font-size:clamp(76px, 7.5vw, 164px) !important; line-height:.98 !important; overflow-wrap:anywhere !important; }
-body.tv-mode #panel-painel .stat__value-secondary { font-size:clamp(30px, 2.5vw, 54px) !important; line-height:1.1 !important; }
-body.tv-mode #panel-painel .target-bar, body.tv-mode #panel-painel .target-bar * { font-size:clamp(21px, 1.7vw, 38px) !important; line-height:1.2 !important; }
-body.tv-mode #panel-painel .target-bar__count, body.tv-mode #panel-painel .target-bar__count * { font-size:clamp(38px, 3.3vw, 72px) !important; }
-body.tv-mode #panel-painel .topics-card, body.tv-mode #panel-painel .topics-card * { font-size:clamp(20px, 1.65vw, 36px) !important; line-height:1.22 !important; }
-body.tv-mode #panel-painel .topics-card .topic-pill__count { font-size:clamp(36px, 3.2vw, 70px) !important; }
-@media (max-width: 1100px), (max-aspect-ratio: 4/3) {
- body.tv-mode { overflow:auto !important; }
- body.tv-mode .page { min-height:100vh !important; height:auto !important; overflow:visible !important; }
- body.tv-mode #panel-painel { overflow:visible !important; }
- body.tv-mode #panel-painel .grid-top { grid-template-columns:minmax(0,1fr) !important; }
- body.tv-mode #panel-painel .hero-col { grid-template-columns:repeat(2,minmax(0,1fr)) !important; }
- body.tv-mode #panel-painel .stat-grid { grid-template-columns:repeat(2,minmax(0,1fr)) !important; grid-template-rows:auto !important; }
+
+<style id="polaris-tv-number-priority-final">
+/* Prioridade visual: manter métricas grandes; reduzir primeiro textos e módulos auxiliares. */
+body.tv-mode #panel-painel .stat-grid { min-width: 0 !important; }
+body.tv-mode #panel-painel .stat { min-width: 0 !important; overflow: hidden !important; }
+body.tv-mode #panel-painel .stat__value {
+  font-size: clamp(62px, min(5.6vw, 8.5vh), 98px) !important;
+  line-height: .98 !important;
+  letter-spacing: -.035em !important;
+  white-space: nowrap !important;
+  max-width: 100% !important;
 }
-@media (max-width: 600px) {
- body.tv-mode #panel-painel .hero-col, body.tv-mode #panel-painel .stat-grid { grid-template-columns:minmax(0,1fr) !important; }
+body.tv-mode #panel-painel .stat__value-secondary {
+  font-size: clamp(14px, min(1.35vw, 2.1vh), 22px) !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
 }
+/* Percentual longo recebe limite próprio para não escapar do card estreito. */
+body.tv-mode #panel-painel #serviceLevel {
+  font-size: clamp(44px, min(4.4vw, 7vh), 78px) !important;
+  letter-spacing: -.04em !important;
+}
+/* Em janelas estreitas, preserva os valores e compacta cabeçalhos e espaços. */
+@media (max-width: 1100px) {
+  body.tv-mode #panel-painel .stat { padding: 8px !important; }
+  body.tv-mode #panel-painel .stat__label { font-size: clamp(12px, 1vw, 15px) !important; line-height: 1.08 !important; }
+  body.tv-mode #panel-painel .stat__sublabel { font-size: clamp(10px, .78vw, 12px) !important; line-height: 1.1 !important; }
+  body.tv-mode #panel-painel .target-bar { gap: 7px !important; padding: 6px 8px !important; }
+  body.tv-mode #panel-painel .target-bar__label-block { flex-basis: 120px !important; min-width: 0 !important; }
+  body.tv-mode #panel-painel .target-bar__label { font-size: 11px !important; }
+  body.tv-mode #panel-painel .target-bar__hint,
+  body.tv-mode #panel-painel .target-bar__status { font-size: 10px !important; }
+  body.tv-mode #panel-painel .topics-card { padding: 7px 9px !important; max-height: 18vh !important; }
+  body.tv-mode #panel-painel .topics-card__head { margin-bottom: 5px !important; }
+  body.tv-mode #panel-painel .topics-card__head h2 { font-size: 13px !important; }
+  body.tv-mode #panel-painel .topics-card__hint { font-size: 10px !important; }
+  body.tv-mode #panel-painel .topic-pill__label { font-size: 11px !important; line-height: 1.12 !important; }
+  body.tv-mode #panel-painel .topic-pill { padding: 6px 8px !important; gap: 3px !important; }
+}
+@media (max-width: 760px) {
+  body.tv-mode { overflow: auto !important; }
+  body.tv-mode .page { height: auto !important; min-height: 100dvh !important; }
+  body.tv-mode #panel-painel { overflow: visible !important; }
+  body.tv-mode #panel-painel .stat__value { font-size: clamp(48px, 9vw, 68px) !important; }
+  body.tv-mode #panel-painel #serviceLevel { font-size: clamp(40px, 7.2vw, 58px) !important; }
+}
+</style>
+
+
+<style id="polaris-final-sizing-fix">
+/* Ajuste final: preservar o tamanho dos indicadores principais em zoom 100%,
+   inclusive quando a janela está dividida, e deixar os módulos inferiores crescerem. */
+.stat__value {
+  font-size: clamp(56px, min(5.8vw, 8.5vh), 96px) !important;
+  line-height: 1.02 !important;
+  white-space: nowrap !important;
+  font-variant-numeric: tabular-nums;
+  max-width: 100%;
+}
+.stat__value-secondary {
+  font-size: clamp(17px, 1.35vw, 25px) !important;
+  line-height: 1.1 !important;
+}
+/* Mantém os valores ainda mais legíveis no modo TV, sem depender de zoom de 50–75%. */
+body.tv-mode #panel-painel .stat__value {
+  font-size: clamp(68px, 6vw, 104px) !important;
+  line-height: 1.02 !important;
+}
+body.tv-mode #panel-painel .stat__value-secondary {
+  font-size: clamp(19px, 1.55vw, 30px) !important;
+}
+body.tv-mode #panel-painel .stat {
+  min-width: 0;
+  overflow: visible !important;
+  padding: clamp(10px, 1vw, 18px);
+}
+body.tv-mode #panel-painel .stat__head { gap: 7px; margin-bottom: 6px; }
+body.tv-mode #panel-painel .stat__label { font-size: clamp(13px, 1.05vw, 19px) !important; }
+body.tv-mode #panel-painel .stat__sublabel { font-size: clamp(11px, .85vw, 16px) !important; }
+/* Nunca cortar categorias ou cartões de TMA: a página cresce/rola se a tela não comportar tudo. */
+body.tv-mode .page {
+  height: auto !important;
+  min-height: 100dvh !important;
+  overflow: visible !important;
+  align-items: stretch;
+}
+body.tv-mode #panel-painel {
+  height: auto !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  flex-direction: column !important;
+}
+body.tv-mode #panel-painel .grid-top {
+  flex: 0 0 auto !important;
+  min-height: clamp(390px, 52vh, 620px) !important;
+}
+body.tv-mode #panel-painel .topics-card,
+body.tv-mode #panel-painel .tv-agent-tma-card {
+  max-height: none !important;
+  height: auto !important;
+  overflow: visible !important;
+  flex: 0 0 auto !important;
+}
+body.tv-mode #panel-painel .topics-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  align-items: stretch;
+}
+body.tv-mode #panel-painel .topic-pill { min-width: 0; overflow-wrap: anywhere; }
+body.tv-mode #panel-painel .topic-pill__label {
+  font-size: clamp(11px, .95vw, 15px) !important;
+  line-height: 1.2 !important;
+  overflow-wrap: anywhere;
+}
+body.tv-mode #panel-painel .tv-agent-tma-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)) !important;
+}
+@media (max-width: 1100px) {
+  .stat__value { font-size: clamp(52px, 6.2vw, 78px) !important; }
+  body.tv-mode #panel-painel .stat__value { font-size: clamp(68px, 7vw, 88px) !important; }
+  body.tv-mode #panel-painel .topics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+}
+@media (max-width: 760px) {
+  .stat__value { font-size: clamp(48px, 9vw, 68px) !important; }
+  body.tv-mode #panel-painel .grid-top { min-height: 0 !important; }
+  body.tv-mode #panel-painel .topics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+  body.tv-mode #panel-painel .stat__value { font-size: clamp(54px, 9vw, 72px) !important; }
+}
+@media (max-width: 480px) {
+  body.tv-mode #panel-painel .topics-grid { grid-template-columns: minmax(0, 1fr) !important; }
+}
+
+/* A preferência da TV deve prevalecer sobre regras de layout com display:flex !important. */
+body.tv-mode #panel-painel .target-bar.is-tv-volume-hidden {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Modo TV: usar o mesmo formato, escala tipográfica e cores dos cards da tela principal. */
+body.tv-mode #panel-painel .topics-card {
+  padding: clamp(12px, 1.3vw, 18px) clamp(14px, 1.5vw, 20px) !important;
+  border-radius: var(--radius-lg) !important;
+}
+body.tv-mode #panel-painel .topics-card__head { margin-bottom: 12px !important; gap: 10px !important; }
+body.tv-mode #panel-painel .topics-card__head h2 { font-size: 16px !important; line-height: normal !important; }
+body.tv-mode #panel-painel .topics-card__hint { font-size: 12px !important; line-height: normal !important; }
+body.tv-mode #panel-painel .topics-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)) !important;
+  gap: 10px !important;
+}
+body.tv-mode #panel-painel .topic-pill {
+  display: flex !important; flex-direction: column !important; align-items: stretch !important;
+  gap: 4px !important; padding: 12px 14px !important; border-radius: var(--radius-md) !important;
+  background: var(--canvas) !important; border: 1px solid var(--line) !important;
+  overflow-wrap: anywhere !important;
+}
+body.tv-mode #panel-painel .topic-pill__count {
+  font-size: 26px !important; line-height: 1 !important; font-weight: 800 !important;
+  white-space: normal !important; color: var(--indigo-700) !important;
+}
+body.tv-mode #panel-painel .topic-pill__count small { font-size: 14px !important; }
+body.tv-mode #panel-painel .topic-pill__label {
+  font-size: 13px !important; line-height: normal !important; font-weight: 700 !important;
+  overflow-wrap: anywhere !important;
+}
+body.tv-mode #panel-painel .topic-pill__breakdown {
+  display: flex !important; flex-wrap: wrap !important; gap: 10px !important;
+  font-size: 13px !important; line-height: normal !important; font-weight: 700 !important;
+}
+body.tv-mode #panel-painel .topic-pill__breakdown span { white-space: nowrap !important; }
+body.tv-mode #panel-painel .topic-pill.topic-pill--critical {
+  background: var(--red-crit-soft) !important; border-color: #f3cccc !important;
+}
+body.tv-mode #panel-painel .topic-pill.topic-pill--critical .topic-pill__count { color: var(--red-crit) !important; }
+body.tv-mode #panel-painel .topic-pill.topic-pill--more {
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  background: var(--canvas-edge) !important; border: 1px dashed var(--line) !important;
+  color: var(--teal-700) !important; font-size: 13px !important; font-weight: 700 !important;
+  cursor: pointer !important;
+}
+</style>
+
+
+<style id="polaris-tv-categories-no-clip-v7">
+/* v7: remover o corte inferior no modo TV. O conteúdo pode crescer e a página rola apenas se a altura disponível não for suficiente. */
+@media (min-width: 761px) and (orientation: landscape) {
+  body.tv-mode { height: auto !important; min-height: 100dvh !important; overflow-x: hidden !important; overflow-y: auto !important; }
+  body.tv-mode .page { height: auto !important; min-height: 100dvh !important; overflow: visible !important; }
+  body.tv-mode .app { flex: 0 0 auto !important; min-height: 0 !important; height: auto !important; overflow: visible !important; }
+  body.tv-mode #panel-painel { flex: 0 0 auto !important; height: auto !important; min-height: 0 !important; overflow: visible !important; }
+  body.tv-mode #panel-painel .grid-top { flex: 0 0 auto !important; min-height: clamp(300px, 52vh, 520px) !important; height: auto !important; overflow: visible !important; }
+  body.tv-mode #panel-painel #topicsCard,
+  body.tv-mode #panel-painel #tvAgentTmaCard { flex: 0 0 auto !important; height: auto !important; min-height: 0 !important; max-height: none !important; overflow: visible !important; }
+  body.tv-mode #panel-painel .topics-grid { align-items: stretch !important; overflow: visible !important; }
+  body.tv-mode #panel-painel .topic-pill { height: auto !important; min-height: 100px !important; overflow: visible !important; }
+  body.tv-mode #panel-painel .topic-pill__label { display: block !important; -webkit-line-clamp: unset !important; overflow: visible !important; white-space: normal !important; }
+  body.tv-mode #panel-painel .topic-pill__breakdown { flex-wrap: wrap !important; white-space: normal !important; }
+}
+/* Em qualquer viewport, os cards de categoria nunca devem ser cortados pelo próprio cartão. */
+body.tv-mode #panel-painel #topicsCard { max-height: none !important; overflow: visible !important; }
+body.tv-mode #panel-painel #topicsCard .topics-grid { overflow: visible !important; }
+body.tv-mode #panel-painel #topicsCard .topic-pill { max-height: none !important; }
 </style>
 
 </head>
@@ -809,11 +1105,21 @@ body.tv-mode #panel-painel .topics-card .topic-pill__count { font-size:clamp(36p
     <section id="topicsCard" class="topics-card" style="display:none">
       <div class="topics-card__head">
         <div>
-          <h2>Assuntos semelhantes na fila</h2>
-          <p class="topics-card__hint" id="topicsHint">Agrupamento automático por palavras-chave do motivo de contato.</p>
+          <h2>Atendimentos por categoria</h2>
+          <p class="topics-card__hint" id="topicsHint">Resumo de clientes em fila e em atendimento por categoria.</p>
         </div>
       </div>
       <div id="topicsGrid" class="topics-grid"></div>
+    </section>
+
+    <section id="tvAgentTmaCard" class="topics-card tv-agent-tma-card" style="display:none">
+      <div class="topics-card__head">
+        <div>
+          <h2>Atendimentos com maior tempo</h2>
+          <p class="topics-card__hint" id="tvAgentTmaHint">Atendimentos que ultrapassaram o limite de tempo configurado.</p>
+        </div>
+      </div>
+      <div id="tvAgentTmaGrid" class="tv-agent-tma-grid"></div>
     </section>
 
     <p id="errorBanner" class="error-banner" style="display:none"></p>
@@ -967,9 +1273,9 @@ body.tv-mode #panel-painel .topics-card .topic-pill__count { font-size:clamp(36p
         <div class="card__title"><span class="card__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span><h2>Modo TV</h2></div>
         <p class="card__note">A TV usa uma configuração independente da sua tela principal. Salvar aqui não altera suas metas ou preferências pessoais.</p>
         <div class="field field--switch"><label>Exibir indicador de volume na TV</label><label class="switch"><input type="checkbox" id="tvVolumeIndicatorEnabled" checked /><span class="switch__track"><span class="switch__thumb"></span></span></label></div>
-        <div class="field field--switch"><label>Exibir assuntos semelhantes por categoria</label><label class="switch"><input type="checkbox" id="tvSimilarIssuesEnabled" checked /><span class="switch__track"><span class="switch__thumb"></span></span></label></div>
-        <div class="field field--switch"><label>Exibir analistas acima do TMA na TV</label><label class="switch"><input type="checkbox" id="tvAgentTmaTableEnabled" /><span class="switch__track"><span class="switch__thumb"></span></span></label></div>
-        <div class="field field--switch"><label>Exibir assunto e link na visão detalhada da TV</label><label class="switch"><input type="checkbox" id="tvAgentShowSubjectLink" /><span class="switch__track"><span class="switch__thumb"></span></span></label></div>
+        <div class="field field--switch"><label>Exibir categorias com clientes em fila e em atendimento</label><label class="switch"><input type="checkbox" id="tvSimilarIssuesEnabled" checked /><span class="switch__track"><span class="switch__thumb"></span></span></label></div>
+        <div class="field field--switch"><label>Exibir atendimentos com maior tempo na TV</label><label class="switch"><input type="checkbox" id="tvAgentTmaTableEnabled" /><span class="switch__track"><span class="switch__thumb"></span></span></label></div>
+        <div class="field field--switch"><label>Exibir assunto e link nos atendimentos da TV</label><label class="switch"><input type="checkbox" id="tvAgentShowSubjectLink" /><span class="switch__track"><span class="switch__thumb"></span></span></label></div>
         <div class="actions"><button type="button" id="saveTvSettingsBtn" class="btn btn--ghost">Salvar configuração da TV</button></div>
         <p id="tvSavedMsg" class="saved-msg" style="display:none">Configuração da TV salva.</p>
       </div>
@@ -1277,11 +1583,15 @@ const DEFAULT_SETTINGS = {
   agentShowSubjectLink: true,
   tvVolumeIndicatorEnabled: true,
   tvSimilarIssuesEnabled: true,
+  tvAgentTmaTableEnabled: false,
+  tvAgentShowSubjectLink: false,
 };
 
 const LS_KEY = "orionWebSettings";
 let polarisUserId = null;
 let activeSettingsScope = "personal";
+// Perfil personalizado "tv": inicia diretamente no painel e bloqueia navegação para telas administrativas.
+let polarisTvOnlyMode = false;
 let tvSettings = { ...DEFAULT_SETTINGS };
 function settingsStorageKey(scope = "personal") { return `${LS_KEY}:${scope}:${polarisUserId || "anonymous"}`; }
 function loadSettings(scope = activeSettingsScope) {
@@ -1373,12 +1683,27 @@ const reportsToggleBtn = document.getElementById("reportsToggleBtn");
 const monitorToggleBtn = document.getElementById("monitorToggleBtn");
 const tvModeBtn = document.getElementById("tvModeBtn");
 panelToggleBtn.innerHTML = GEAR_ICON;
+function applyTvVolumeVisibility(settings = tvSettings) {
+  const targetBar = document.querySelector(".target-bar");
+  if (!targetBar) return;
+  // A preferência controla o indicador exclusivamente no modo TV.
+  // A classe específica prevalece sobre o CSS do modo TV, que força display:flex !important.
+  const inTvMode = document.body.classList.contains("tv-mode");
+  const volumeEnabled = settings?.tvVolumeIndicatorEnabled !== false;
+  const shouldShow = !inTvMode || volumeEnabled;
+  targetBar.classList.toggle("is-tv-volume-hidden", inTvMode && !volumeEnabled);
+  targetBar.style.display = shouldShow ? "" : "none";
+  targetBar.setAttribute("aria-hidden", shouldShow ? "false" : "true");
+}
 function setTvMode(enabled) {
+  // Um usuário associado ao perfil personalizado "tv" não pode sair do modo TV pela interface.
+  if (polarisTvOnlyMode) enabled = true;
   document.body.classList.toggle("tv-mode", enabled);
   activeSettingsScope = enabled ? "tv" : "personal";
   tvModeBtn.classList.toggle("is-active-tab", enabled);
   tvModeBtn.title = enabled ? "Sair do modo TV" : "Abrir modo TV";
   tvModeBtn.setAttribute("aria-label", tvModeBtn.title);
+  applyTvVolumeVisibility(enabled ? { ...tvSettings, ...loadSettings("tv") } : tvSettings);
   if (enabled) { setPanel("painel"); renderPanelWithCurrentData(); }
   else if (latestPanelData) renderPanelWithCurrentData();
 }
@@ -1390,6 +1715,8 @@ function isPanelActive(name) {
 }
 
 function setPanel(name) {
+  // Perfis TV permanecem no painel principal.
+  if (polarisTvOnlyMode) name = "painel";
   document.getElementById("panel-painel").classList.toggle("is-active", name === "painel");
   document.getElementById("panel-config").classList.toggle("is-active", name === "config");
   document.getElementById("panel-reports").classList.toggle("is-active", name === "reports");
@@ -1614,8 +1941,22 @@ function applyAgentSubjectColumnVisibility(settings) {
 
 let currentSettings = loadSettings();
 
-function fillTvForm(s) { document.getElementById("tvVolumeIndicatorEnabled").checked = s.tvVolumeIndicatorEnabled !== false; document.getElementById("tvSimilarIssuesEnabled").checked = s.tvSimilarIssuesEnabled !== false; document.getElementById("tvAgentTmaTableEnabled").checked = !!s.agentTmaTableEnabled; document.getElementById("tvAgentShowSubjectLink").checked = !!s.agentShowSubjectLink; }
-function getTvSettings() { return { ...tvSettings, tvVolumeIndicatorEnabled: document.getElementById("tvVolumeIndicatorEnabled").checked, tvSimilarIssuesEnabled: document.getElementById("tvSimilarIssuesEnabled").checked, agentTmaTableEnabled: document.getElementById("tvAgentTmaTableEnabled").checked, agentShowSubjectLink: document.getElementById("tvAgentShowSubjectLink").checked }; }
+function fillTvForm(s) {
+  document.getElementById("tvVolumeIndicatorEnabled").checked = s.tvVolumeIndicatorEnabled !== false;
+  document.getElementById("tvSimilarIssuesEnabled").checked = s.tvSimilarIssuesEnabled !== false;
+  // Preferência de TV própria; fallback para as chaves antigas apenas na migração.
+  document.getElementById("tvAgentTmaTableEnabled").checked = s.tvAgentTmaTableEnabled !== undefined ? !!s.tvAgentTmaTableEnabled : !!s.agentTmaTableEnabled;
+  document.getElementById("tvAgentShowSubjectLink").checked = s.tvAgentShowSubjectLink !== undefined ? !!s.tvAgentShowSubjectLink : !!s.agentShowSubjectLink;
+}
+function getTvSettings() {
+  return {
+    ...tvSettings,
+    tvVolumeIndicatorEnabled: document.getElementById("tvVolumeIndicatorEnabled").checked,
+    tvSimilarIssuesEnabled: document.getElementById("tvSimilarIssuesEnabled").checked,
+    tvAgentTmaTableEnabled: document.getElementById("tvAgentTmaTableEnabled").checked,
+    tvAgentShowSubjectLink: document.getElementById("tvAgentShowSubjectLink").checked,
+  };
+}
 function fillForm(s) {
   f.queueFirstAlertSeconds.value = s.queueFirstAlertSeconds;
   f.queueReminderMinutes.value = s.queueReminderMinutes;
@@ -1664,7 +2005,29 @@ form.addEventListener("submit", (e) => {
   setTimeout(() => (savedMsg.style.display = "none"), 2500);
 });
 
-document.getElementById("saveTvSettingsBtn").addEventListener("click", async () => { tvSettings = getTvSettings(); await saveSettingsToStorage(tvSettings, "tv"); const msg = document.getElementById("tvSavedMsg"); msg.style.display = "block"; setTimeout(() => (msg.style.display = "none"), 2500); });
+document.getElementById("saveTvSettingsBtn").addEventListener("click", async () => {
+  const button = document.getElementById("saveTvSettingsBtn");
+  const msg = document.getElementById("tvSavedMsg");
+  button.disabled = true;
+  try {
+    tvSettings = getTvSettings();
+    await saveSettingsToStorage(tvSettings, "tv");
+    msg.textContent = "Configuração da TV salva. Os indicadores serão atualizados agora.";
+    msg.style.display = "block";
+    applyTvVolumeVisibility(tvSettings);
+    if (document.body.classList.contains("tv-mode") && latestPanelData) {
+      renderTopicsCard(latestPanelData.fila?.rows || [], latestPanelData.andamento?.rows || [], tvSettings);
+      renderTvAgentTmaCard(latestPanelData.andamento?.rows || [], tvSettings);
+    }
+    refreshPanel().catch(() => {});
+  } catch (error) {
+    msg.textContent = "Não foi possível salvar a configuração da TV. Verifique a conexão e tente novamente.";
+    msg.style.display = "block";
+  } finally {
+    button.disabled = false;
+    setTimeout(() => { msg.style.display = "none"; }, 3500);
+  }
+});
 document.getElementById("resetBtn").addEventListener("click", () => {
   currentSettings = { ...DEFAULT_SETTINGS };
   saveSettingsToStorage(currentSettings);
@@ -2064,67 +2427,120 @@ async function submitSubjectCandidates(filaRows) {
 const TOPICS_VISIBLE_LIMIT = 6; // pills visíveis antes de precisar expandir — otimizado pra não quebrar o layout da TV
 let topicsExpanded = false;
 
-function renderTopicsCard(filaRows, settings) {
+function renderTopicsCard(filaRows, attendanceRows, settings) {
   const card = document.getElementById("topicsCard");
   const grid = document.getElementById("topicsGrid");
   const hint = document.getElementById("topicsHint");
+  if (!card || !grid || !hint) return;
 
-  const topicsEnabled = document.body.classList.contains("tv-mode") ? settings.tvSimilarIssuesEnabled !== false : settings.similarIssuesEnabled;
-  if (!topicsEnabled) {
-    card.style.display = "none";
-    return;
-  }
+  const isTv = document.body.classList.contains("tv-mode");
+  const enabled = isTv ? settings.tvSimilarIssuesEnabled !== false : !!settings.similarIssuesEnabled;
+  if (!enabled) { card.style.display = "none"; return; }
 
-  const subjects = extractWaitingSubjects(filaRows);
-  submitSubjectCandidates(filaRows).catch(() => {});
+  const selectedSet = Array.isArray(settings.selectedQueues) && settings.selectedQueues.length
+    ? new Set(settings.selectedQueues.map((q) => String(q).toLowerCase())) : null;
+  const inSelectedQueues = (r) => !selectedSet || selectedSet.has(String(r.__filaBase || r.Fila || "").toLowerCase());
+  const queueRows = (Array.isArray(filaRows) ? filaRows : []).filter(inSelectedQueues);
+  const activeRows = (Array.isArray(attendanceRows) ? attendanceRows : []).filter(inSelectedQueues);
+  if (!isTv) submitSubjectCandidates(queueRows).catch(() => {});
 
-  if (!subjects || subjects.length === 0) {
-    // Ninguém em fila com assunto agora: o card some por completo (não
-    // ocupa espaço no layout principal, importante pro uso na TV).
+  const counts = new Map();
+  const add = (row, kind) => {
+    const subject = String(row.Assunto || "").trim();
+    if (!subject) return;
+    const key = categorizeSubject(subject) || "outros";
+    const item = counts.get(key) || { key, queue: 0, attendance: 0 };
+    item[kind] += 1;
+    counts.set(key, item);
+  };
+  queueRows.forEach((row) => add(row, "queue"));
+  activeRows.forEach((row) => add(row, "attendance"));
+  const sorted = [...counts.values()].sort((a, b) => (b.queue + b.attendance) - (a.queue + a.attendance));
+
+  if (!sorted.length) {
     card.style.display = "none";
     topicsExpanded = false;
     return;
   }
-
   card.style.display = "block";
-  hint.textContent = `Agrupamento automático de ${subjects.length} cliente(s) em fila por categoria do assunto.`;
+  hint.textContent = isTv
+    ? `${queueRows.length} em fila · ${activeRows.length} em atendimento · principais categorias agora`
+    : `Agrupamento automático de ${queueRows.length} clientes em fila e ${activeRows.length} em atendimento.`;
 
-  const counts = {};
-  subjects.forEach((s) => {
-    const key = categorizeSubject(s) || "outros";
-    counts[key] = (counts[key] || 0) + 1;
-  });
-
-  const sortedKeys = Object.keys(counts).sort((a, b) => counts[b] - counts[a]);
-  const visibleKeys = topicsExpanded ? sortedKeys : sortedKeys.slice(0, TOPICS_VISIBLE_LIMIT);
-  const hiddenCount = sortedKeys.length - visibleKeys.length;
-
+  // Mantém o mesmo padrão da tela principal também na TV: seis cards e um resumo das demais.
+  const limit = TOPICS_VISIBLE_LIMIT;
+  const visible = topicsExpanded ? sorted : sorted.slice(0, limit);
   grid.innerHTML = "";
-  visibleKeys.forEach((key) => {
-    const n = counts[key];
-    if (n === 0) return;
-    const label = SUBJECT_CATEGORY_LABEL[key] || key;
+  visible.forEach((item) => {
+    const total = item.queue + item.attendance;
     const pill = document.createElement("div");
-    pill.className = "topic-pill" + (key !== "outros" && n >= 3 ? " topic-pill--critical" : "");
-    pill.innerHTML = `<span class="topic-pill__count">${n}<small> / ${subjects.length}</small></span><span class="topic-pill__label">${label}</span>`;
+    pill.className = "topic-pill" + (item.key !== "outros" && total > 5 ? " topic-pill--critical" : "");
+    const label = SUBJECT_CATEGORY_LABEL[item.key] || item.key;
+    pill.innerHTML = `<span class="topic-pill__count">${total}</span><span class="topic-pill__label">${escapeHtml(label)}</span><span class="topic-pill__breakdown"><span>Fila: ${item.queue}</span><span>Atend.: ${item.attendance}</span></span>`;
     grid.appendChild(pill);
   });
-
-  if (hiddenCount > 0) {
+  const hiddenCount = sorted.length - visible.length;
+  if (hiddenCount > 0 && !topicsExpanded) {
     const moreBtn = document.createElement("button");
-    moreBtn.type = "button";
-    moreBtn.className = "topic-pill topic-pill--more";
+    moreBtn.type = "button"; moreBtn.className = "topic-pill topic-pill--more";
     moreBtn.textContent = `+${hiddenCount} categoria${hiddenCount > 1 ? "s" : ""}`;
-    moreBtn.addEventListener("click", () => { topicsExpanded = true; renderTopicsCard(filaRows, settings); });
+    moreBtn.setAttribute("aria-label", `${hiddenCount} categorias adicionais. Clique para expandir.`);
+    moreBtn.addEventListener("click", () => { topicsExpanded = true; renderTopicsCard(filaRows, attendanceRows, settings); });
     grid.appendChild(moreBtn);
-  } else if (topicsExpanded && sortedKeys.length > TOPICS_VISIBLE_LIMIT) {
+  } else if (topicsExpanded && sorted.length > TOPICS_VISIBLE_LIMIT) {
     const lessBtn = document.createElement("button");
-    lessBtn.type = "button";
-    lessBtn.className = "topic-pill topic-pill--more";
-    lessBtn.textContent = "Mostrar menos";
-    lessBtn.addEventListener("click", () => { topicsExpanded = false; renderTopicsCard(filaRows, settings); });
+    lessBtn.type = "button"; lessBtn.className = "topic-pill topic-pill--more"; lessBtn.textContent = "Mostrar menos";
+    lessBtn.addEventListener("click", () => { topicsExpanded = false; renderTopicsCard(filaRows, attendanceRows, settings); });
     grid.appendChild(lessBtn);
   }
+}
+
+function parsePanelDurationSeconds(value) {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const text = String(value || "").trim();
+  if (!text) return null;
+  const parts = text.split(":").map((part) => Number(part));
+  if (!parts.length || parts.some((part) => !Number.isFinite(part))) return null;
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  if (parts.length === 2) return parts[0] * 60 + parts[1];
+  return null;
+}
+
+function renderTvAgentTmaCard(attendanceRows, settings) {
+  const card = document.getElementById("tvAgentTmaCard");
+  const grid = document.getElementById("tvAgentTmaGrid");
+  const hint = document.getElementById("tvAgentTmaHint");
+  if (!card || !grid || !hint) return;
+  const isTv = document.body.classList.contains("tv-mode");
+  if (!isTv || settings.tvAgentTmaTableEnabled !== true) { card.style.display = "none"; grid.innerHTML = ""; return; }
+
+  const selectedSet = Array.isArray(settings.selectedQueues) && settings.selectedQueues.length
+    ? new Set(settings.selectedQueues.map((q) => String(q).toLowerCase())) : null;
+  const rows = (Array.isArray(attendanceRows) ? attendanceRows : [])
+    .filter((row) => !selectedSet || selectedSet.has(String(row.__filaBase || row.Fila || "").toLowerCase()))
+    .map((row) => ({ ...row, __durationSeconds: parsePanelDurationSeconds(row.Tempo) }))
+    .filter((row) => row.__durationSeconds !== null && row.__durationSeconds >= (Number(settings.agentTmaFirstAlertMinutes) || DEFAULT_SETTINGS.agentTmaFirstAlertMinutes) * 60)
+    .sort((a, b) => b.__durationSeconds - a.__durationSeconds)
+    .slice(0, 4);
+
+  if (!rows.length) { card.style.display = "none"; grid.innerHTML = ""; return; }
+  card.style.display = "block";
+  hint.textContent = `Até ${rows.length} atendimentos acima de ${Number(settings.agentTmaFirstAlertMinutes) || DEFAULT_SETTINGS.agentTmaFirstAlertMinutes} min, ordenados pelo maior tempo.`;
+  const showDetails = settings.tvAgentShowSubjectLink === true;
+  grid.innerHTML = "";
+  rows.forEach((row) => {
+    const item = document.createElement("article");
+    item.className = "tv-agent-tma-item";
+    const name = String(row.Analista || "Analista não identificado");
+    const client = String(row.Cliente || "Cliente não identificado");
+    const subject = String(row.Assunto || "Assunto não informado");
+    const link = row.Link__href || row.Cliente__href || row.Analista__href;
+    const detailHtml = showDetails
+      ? `<div class="tv-agent-tma-item__subject">${escapeHtml(subject)}</div>${link ? `<a class="tv-agent-tma-item__detail tv-agent-tma-item__link" href="${escapeHtml(link)}" target="_blank" rel="noopener noreferrer">Abrir atendimento</a>` : `<div class="tv-agent-tma-item__detail">Link indisponível</div>`}`
+      : "";
+    item.innerHTML = `<div class="tv-agent-tma-item__top"><span class="tv-agent-tma-item__name">${escapeHtml(name)} · ${escapeHtml(client)}</span><span class="tv-agent-tma-item__time">${escapeHtml(String(row.Tempo || "–"))}</span></div><div class="tv-agent-tma-item__detail">${escapeHtml(String(row.Fila || "Fila não identificada"))}</div>${detailHtml}`;
+    grid.appendChild(item);
+  });
 }
 
 function tempoCellClass(level) {
@@ -2142,7 +2558,14 @@ let panelRefreshInFlight = false;
 async function refreshPanel() {
   if (document.hidden || panelRefreshInFlight) return;
   panelRefreshInFlight = true;
-  const settings = loadSettings(document.body.classList.contains("tv-mode") ? "tv" : "personal");
+  const isTvModeNow = document.body.classList.contains("tv-mode");
+  // Na TV, usar a configuração TV já carregada/salva e manter a visibilidade
+  // sincronizada a cada atualização; não depender apenas do estado inicial do DOM.
+  const settings = isTvModeNow
+    ? { ...tvSettings, ...loadSettings("tv") }
+    : loadSettings("personal");
+  if (isTvModeNow) tvSettings = { ...tvSettings, ...settings };
+  applyTvVolumeVisibility(settings);
   const skills = getActiveSkills(settings);
   const errorBanner = document.getElementById("errorBanner");
   const connStatus = document.getElementById("connStatus");
@@ -2205,10 +2628,7 @@ async function refreshPanel() {
   // a tela de monitoramento completo) — evita 3 chamadas repetidas.
   const agentTableBody = document.getElementById("agentTableBody");
   const agentError = document.getElementById("agentError");
-  const targetBar = document.querySelector(".target-bar");
-  if (targetBar) targetBar.style.display = document.body.classList.contains("tv-mode") && settings.tvVolumeIndicatorEnabled === false ? "none" : "";
-  const topicsCard = document.getElementById("topicsCard");
-  if (topicsCard && document.body.classList.contains("tv-mode") && settings.tvSimilarIssuesEnabled === false) topicsCard.style.display = "none";
+  applyTvVolumeVisibility(settings);
   applyAgentSectionVisibility(settings);
   if (document.body.classList.contains("tv-mode")) document.getElementById("agentSection").style.display = "none";
   applyAgentSubjectColumnVisibility(settings);
@@ -2219,7 +2639,8 @@ async function refreshPanel() {
     latestPanelData = panel;
     agentError.style.display = "none";
 
-    renderTopicsCard(panel.fila?.rows, settings);
+    renderTopicsCard(panel.fila?.rows || [], panel.andamento?.rows || [], settings);
+    renderTvAgentTmaCard(panel.andamento?.rows || [], settings);
     if (isPanelActive("monitor")) renderMonitorScreen(panel, settings);
 
     if (!settings.agentTmaTableEnabled || document.body.classList.contains("tv-mode")) { panelRefreshInFlight = false; return; }
@@ -3633,14 +4054,33 @@ document.getElementById("compareGranularity")?.addEventListener("change", () => 
     window.polarisAccessToken = session.access_token;
     polarisUserId = session.user.id;
     const profile = await getProfile(session.user.id);
+    // Perfis personalizados são vinculados por app_user_roles. Use o nome técnico "tv".
+    let assignedRoles = [];
+    try {
+      const { data: roleLinks, error: roleError } = await sb.from('app_user_roles').select('app_roles(name,label)').eq('user_id', session.user.id);
+      if (!roleError) assignedRoles = roleLinks || [];
+    } catch (roleLookupError) {
+      console.warn('[Polaris] Não foi possível consultar os perfis adicionais:', roleLookupError);
+    }
+    const isTvProfile = String(profile.role || '').toLowerCase() === 'tv' || assignedRoles.some((link) => {
+      const roleName = String(link.app_roles?.name || '').trim().toLowerCase();
+      const roleLabel = String(link.app_roles?.label || '').trim().toLowerCase();
+      return roleName === 'tv' || roleLabel === 'tv' || roleLabel === 'modo tv';
+    });
+    if (!profile.is_active) throw new Error('Seu usuário está desativado. Procure o responsável pelo Polaris.');
+    polarisTvOnlyMode = isTvProfile;
+    document.body.classList.toggle('tv-only', polarisTvOnlyMode);
     currentSettings = await loadSettingsFromCloud("personal");
     tvSettings = await loadSettingsFromCloud("tv");
-    activeSettingsScope = "personal";
+    activeSettingsScope = polarisTvOnlyMode ? "tv" : "personal";
     fillForm(currentSettings);
     fillTvForm(tvSettings);
-    if (!profile.is_active) throw new Error('Seu usuário está desativado. Procure o responsável pelo Polaris.');
     gate.style.display = 'none';
-    addAdminEntry(profile);
+    if (!polarisTvOnlyMode) addAdminEntry(profile);
+    if (polarisTvOnlyMode) {
+      setPanel('painel');
+      setTvMode(true);
+    }
     if (window.polarisStartPanel) window.polarisStartPanel();
   }
 
